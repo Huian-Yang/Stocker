@@ -1,9 +1,15 @@
+import os
+from dotenv import load_dotenv
+from cerebras.cloud.sdk import Cerebras
 import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.express as px
 
-st.title("Stock Comparison Dashboard with Market Cap Metrics & Growth")
+# Load environment variables (make sure your .env file has CEREBRAS_API_KEY defined)
+load_dotenv()
+
+st.title("Stock Comparison Dashboard with Market Cap Metrics, Growth & AI Analysis")
 
 # Input for tickers (second ticker is optional)
 ticker1 = st.text_input("Enter first stock ticker", value="AAPL")
@@ -12,6 +18,7 @@ ticker2 = st.text_input("Enter second stock ticker (optional)", value="")
 start_date = st.date_input("Start Date", pd.to_datetime("2022-01-01"))
 end_date = st.date_input("End Date", pd.to_datetime("2022-12-31"))
 
+# Button to get stock data and plots
 if st.button("Get Stock Data"):
     data_frames = []
     
@@ -104,3 +111,30 @@ if st.button("Get Stock Data"):
             st.plotly_chart(fig_cap, use_container_width=True)
         else:
             st.warning("Shares outstanding data unavailable; estimated market cap cannot be computed.")
+
+#---------------- Cerebras API Section ----------------#
+
+# Create a Cerebras client using the API key from environment variables
+client = Cerebras(api_key=os.getenv("CEREBRAS_API_KEY"))
+
+if st.button("Get AI Analysis"):
+    # Dynamically build a prompt based on the provided tickers
+    if ticker2:
+        prompt = f"Compare {ticker1} and {ticker2} based on their recent performance."
+    else:
+        prompt = f"Provide an analysis for {ticker1} based on its recent performance."
+    
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": prompt},
+            ],
+            model="llama3.1-8b",
+        )
+        # Instead of dictionary-style indexing, use the object's attributes:
+        ai_response = chat_completion.choices[0].message.content
+    except Exception as e:
+        ai_response = f"Error fetching analysis: {e}"
+    
+    st.subheader("AI Analysis Response")
+    st.text_area("Response", value=ai_response, height=200)
