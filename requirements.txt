@@ -3,5 +3,4 @@ yfinance
 pandas
 python-dotenv
 plotly
-cerebras-cloud
 cerebras.cloud.sdk
